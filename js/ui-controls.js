@@ -3,6 +3,9 @@
  * Handles UI interactions and dynamic field updates
  */
 
-// No additional Alpine component extensions needed
-// This file is mainly for organizational purposes
-// UI controls are defined in the main calculator.js file
+console.log("UI controls.js loaded");
+
+// Add some basic initialization
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM fully loaded");
+});
