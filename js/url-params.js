@@ -4,7 +4,10 @@
  */
 
 // Extend the Alpine.js component with URL parameter handling
+console.log("URL params.js loaded");
+
 document.addEventListener('alpine:init', () => {
+    console.log("Extending Alpine with URL parameter handling");
     Alpine.data('dscrCalculator', () => ({
         /**
          * Apply URL parameters to calculator fields
@@ -29,17 +32,7 @@ document.addEventListener('alpine:init', () => {
                 this.updatePropertyValueLabel();
             }
             
-            if (urlParams.has('existing1st')) {
-                this.existing1st = parseBoolean(urlParams.get('existing1st'));
-            }
-            
-            if (urlParams.has('loanFunded')) {
-                this.loanFunded = parseBoolean(urlParams.get('loanFunded'));
-            }
-            
-            if (urlParams.has('tempBuydown')) {
-                this.tempBuydown = parseBoolean(urlParams.get('tempBuydown'));
-            }
+            // We've removed existing1st, loanFunded, and tempBuydown parameters
             
             // Property value and loan amount
             if (urlParams.has('propertyValue')) {
