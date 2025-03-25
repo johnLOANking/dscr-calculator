@@ -100,14 +100,21 @@
     gap: 1rem;
 }
 
-.checkboxes label {
+.checkboxes label, .radio-group label {
     display: flex;
     align-items: center;
     font-weight: normal;
+    margin-right: 1rem;
 }
 
-.checkboxes input[type="checkbox"] {
+.checkboxes input[type="checkbox"], .radio-group input[type="radio"] {
     margin-right: 0.5rem;
+}
+
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 /* Results Section */
