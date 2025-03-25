@@ -4,7 +4,10 @@
  */
 
 // Define the Alpine.js component
+console.log("Calculator.js loaded");
+
 document.addEventListener('alpine:init', () => {
+    console.log("Alpine initialized");
     Alpine.data('dscrCalculator', () => ({
         // Calculator state
         isRefi: false,
@@ -55,6 +58,8 @@ document.addEventListener('alpine:init', () => {
          * Initialize the calculator
          */
         async initialize() {
+            console.log("Initialize calculator starting");
+            
             // Load default rates and tax/insurance percentages
             await this.loadDefaults();
             
@@ -73,6 +78,8 @@ document.addEventListener('alpine:init', () => {
             
             // Add input change listeners
             this.addInputChangeListeners();
+            
+            console.log("Calculator initialization completed");
         },
         
         /**
@@ -86,8 +93,15 @@ document.addEventListener('alpine:init', () => {
                 
                 // Set tax and insurance defaults from JSON
                 if (taxInsData && taxInsData.defaults) {
+                    console.log("Loaded tax and insurance defaults:", taxInsData);
                     this.taxesPercent = taxInsData.defaults.taxes.percentage.toFixed(2);
                     this.insurancePercent = taxInsData.defaults.insurance.percentage.toFixed(2);
+                    
+                    // Calculate initial tax and insurance amounts
+                    this.calculateTaxesAmount();
+                    this.calculateInsuranceAmount();
+                } else {
+                    console.error("Tax and insurance defaults not found in JSON response");
                 }
                 
                 // Load interest rate from rates.json
@@ -96,11 +110,23 @@ document.addEventListener('alpine:init', () => {
                 
                 // Set interest rate from JSON (assuming first rate or specific format)
                 if (ratesData && ratesData.rates && ratesData.rates.length > 0) {
+                    console.log("Loaded interest rate:", ratesData.rates[0].rate);
                     this.interestRate = ratesData.rates[0].rate.toFixed(3);
+                } else {
+                    console.error("Interest rate not found in JSON response");
                 }
             } catch (error) {
                 console.error('Error loading defaults:', error);
                 // Continue with hardcoded defaults if JSON loading fails
+                
+                // Set hardcoded defaults
+                this.taxesPercent = '1.25';
+                this.insurancePercent = '0.35';
+                this.interestRate = '6.125';
+                
+                // Calculate initial tax and insurance amounts
+                this.calculateTaxesAmount();
+                this.calculateInsuranceAmount();
             }
         },
         
@@ -109,16 +135,21 @@ document.addEventListener('alpine:init', () => {
          */
         async loadDSCRMessages() {
             try {
+                console.log("Loading DSCR messages");
                 const response = await fetch('data/dscr-messages.json');
                 const data = await response.json();
                 
                 if (data && data.dscrMessages) {
+                    console.log("DSCR messages loaded successfully:", data.dscrMessages);
                     this.dscrMessages = data.dscrMessages;
+                } else {
+                    console.error("DSCR messages JSON structure is not as expected");
                 }
             } catch (error) {
                 console.error('Error loading DSCR messages:', error);
                 
                 // Fallback to hardcoded messages if JSON loading fails
+                console.log("Using fallback hardcoded DSCR messages");
                 this.dscrMessages = [
                     {
                         min: 1.25,
@@ -265,15 +296,36 @@ document.addEventListener('alpine:init', () => {
                 if (this.rentalUnits[i]) {
                     newUnits.push(this.rentalUnits[i]);
                 } else {
-                    newUnits.push({ income: '0.00' });
+                    // For first unit, use default value, others 0
+                    const defaultValue = i === 0 ? '3,500.00' : '0.00';
+                    newUnits.push({ income: defaultValue });
                 }
             }
             this.rentalUnits = newUnits;
             
-            // Calculate total rental income if per unit method
+            // If we're using the per-unit method, update total rental income
             if (this.rentalIncomeMethod === 'perUnit') {
                 this.calculateTotalRentalIncome();
+            } else if (this.numberOfUnits === 1) {
+                // If there's only one unit and we're using total method,
+                // update the first unit's income to match total
+                if (this.rentalUnits.length > 0) {
+                    this.rentalUnits[0].income = this.totalRentalIncome;
+                }
             }
+            
+            // If we switch to per-unit method and have multiple units,
+            // distribute total income among units
+            if (this.rentalIncomeMethod === 'perUnit' && this.numberOfUnits > 1) {
+                const totalIncome = this.parseFormattedCurrency(this.totalRentalIncome);
+                const perUnitIncome = totalIncome / this.numberOfUnits;
+                
+                this.rentalUnits.forEach((unit, index) => {
+                    unit.income = this.formatCurrencyValue(perUnitIncome);
+                });
+            }
+            
+            console.log("Updated rental units:", this.rentalUnits, "Method:", this.rentalIncomeMethod);
         },
         
         /**
@@ -286,6 +338,7 @@ document.addEventListener('alpine:init', () => {
                     total += this.parseFormattedCurrency(unit.income);
                 });
                 this.totalRentalIncome = this.formatCurrencyValue(total);
+                console.log("Total rental income calculated:", this.totalRentalIncome);
             }
         },
         
@@ -434,9 +487,6 @@ document.addEventListener('alpine:init', () => {
             
             // Add parameters for all relevant fields
             url.searchParams.set('isRefi', this.isRefi);
-            url.searchParams.set('existing1st', this.existing1st);
-            url.searchParams.set('loanFunded', this.loanFunded);
-            url.searchParams.set('tempBuydown', this.tempBuydown);
             url.searchParams.set('propertyValue', this.parseFormattedCurrency(this.propertyValue));
             url.searchParams.set('loanAmount', this.parseFormattedCurrency(this.loanAmount));
             url.searchParams.set('numberOfUnits', this.numberOfUnits);
