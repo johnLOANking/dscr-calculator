@@ -84,6 +84,87 @@ For more advanced integration, you can copy the calculator's HTML, CSS, and Java
 3. Combine them into a single HTML file with inline CSS and JavaScript
 4. Update the JavaScript to load the JSON data files from your GitHub repository
 
+
+### Method 3: Script tag
+
+For embedding your calculator in ClickFunnels 2.0, using a script tag instead of an iframe can have advantages, depending on your specific needs.
+Script Tag vs. iFrame
+Script Tag Advantages:
+
+Better integration with the page's styling
+No scrolling issues that can occur with iframes
+More seamless user experience
+Can interact directly with other elements on your ClickFunnels page
+Better mobile responsiveness
+
+Script Tag Disadvantages:
+
+Potential JavaScript conflicts with ClickFunnels' own scripts
+Requires more careful implementation to avoid styling conflicts
+
+Implementation with Script Tag
+Here's how you could embed your calculator using a script tag in ClickFunnels 2.0:
+
+Add a custom HTML element in ClickFunnels
+Use this code to load your calculator:
+
+<div id="dscr-calculator-container"></div>
+
+<script>
+  // Load Alpine.js
+  const alpineScript = document.createElement('script');
+  alpineScript.defer = true;
+  alpineScript.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js';
+  document.head.appendChild(alpineScript);
+  
+  // Function to load calculator resources
+  function loadCalculator() {
+    // Load CSS
+    const cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'https://johnloanking.github.io/dscr-calculator/css/styles.css?v=' + Date.now();
+    document.head.appendChild(cssLink);
+    
+    // Load HTML content
+    fetch('https://johnloanking.github.io/dscr-calculator/index.html?v=' + Date.now())
+      .then(response => response.text())
+      .then(html => {
+        // Extract just the calculator container
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const calculatorDiv = tempDiv.querySelector('#dscr-calculator');
+        document.getElementById('dscr-calculator-container').appendChild(calculatorDiv);
+        
+        // Load JS files in correct order
+        loadScript('https://johnloanking.github.io/dscr-calculator/js/url-params.js?v=' + Date.now(), function() {
+          loadScript('https://johnloanking.github.io/dscr-calculator/js/ui-controls.js?v=' + Date.now(), function() {
+            loadScript('https://johnloanking.github.io/dscr-calculator/js/calculator.js?v=' + Date.now());
+          });
+        });
+      })
+      .catch(error => {
+        console.error('Failed to load calculator:', error);
+        document.getElementById('dscr-calculator-container').innerHTML = 
+          '<p>Error loading calculator. Please try refreshing the page.</p>';
+      });
+  }
+  
+  // Helper function to load scripts in sequence
+  function loadScript(url, callback) {
+    const script = document.createElement('script');
+    script.src = url;
+    
+    if (callback) {
+      script.onload = callback;
+    }
+    
+    document.body.appendChild(script);
+  }
+  
+  // Wait for Alpine.js to load before loading calculator
+  alpineScript.onload = loadCalculator;
+</script>
+
 ## Customizing the Calculator
 
 ### Default Values
