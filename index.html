@@ -18,26 +18,17 @@
                 <h2>Loan Information</h2>
                 
                 <div class="form-group">
-                    <label>Is this a Refi?</label>
-                    <div class="button-group">
-                        <button :class="{ 'active': !isRefi }" @click="isRefi = false; updatePropertyValueLabel()">No</button>
-                        <button :class="{ 'active': isRefi }" @click="isRefi = true; updatePropertyValueLabel()">Yes</button>
+                    <label>Loan Purpose</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="loanPurpose" x-model="isRefi" :value="false" @change="updatePropertyValueLabel()">
+                            Purchase
+                        </label>
+                        <label>
+                            <input type="radio" name="loanPurpose" x-model="isRefi" :value="true" @change="updatePropertyValueLabel()">
+                            Refinance
+                        </label>
                     </div>
-                </div>
-                
-                <div class="form-group checkboxes">
-                    <label>
-                        <input type="checkbox" x-model="existing1st">
-                        Existing 1st?
-                    </label>
-                    <label>
-                        <input type="checkbox" x-model="loanFunded">
-                        Loan funded
-                    </label>
-                    <label>
-                        <input type="checkbox" x-model="tempBuydown">
-                        Temp buydown?
-                    </label>
                 </div>
             </div>
             
@@ -224,9 +215,24 @@
         </div>
     </div>
 
-    <!-- JavaScript Files -->
-    <script src="js/url-params.js?v=1.0.0"></script>
-    <script src="js/ui-controls.js?v=1.0.0"></script>
-    <script src="js/calculator.js?v=1.0.0"></script>
+    <!-- JavaScript Files - Adding versioning to force refresh -->
+    <script src="js/url-params.js?v=1.0.1"></script>
+    <script src="js/ui-controls.js?v=1.0.1"></script>
+    <script src="js/calculator.js?v=1.0.1"></script>
+    
+    <!-- Debug script to check if Alpine is loading correctly -->
+    <script>
+        console.log('Document loaded');
+        setTimeout(() => {
+            if (typeof Alpine === 'undefined') {
+                console.log('Alpine.js loaded successfully');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>error('Alpine.js failed to load. Check your network connection.');
+                document.getElementById('dscr-calculator').innerHTML = '<div class="error-message">Failed to load calculator. Please refresh the page or check your internet connection.</div>';
+            } else {
+                console.
 </body>
 </html>
