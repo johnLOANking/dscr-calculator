@@ -1,3 +1,12 @@
+<script>
+    console.log('Page started loading');
+    window.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+    });
+    window.addEventListener('load', function() {
+        console.log('Page fully loaded including all resources');
+    });
+</script>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -221,13 +230,21 @@
     <script src="js/calculator.js?v=1.0.1"></script>
     
     <!-- Debug script to check if Alpine is loading correctly -->
-    <script>
-        console.log('Document loaded');
-        setTimeout(() => {
-            if (typeof Alpine === 'undefined') {
-                console.log('Alpine.js loaded successfully');
+    console.log('Document loaded');
+    setTimeout(() => {
+        if (typeof Alpine === 'undefined') {
+            console.error('Alpine.js failed to load. Check your network connection.');
+            const calculatorElement = document.getElementById('dscr-calculator');
+            if (calculatorElement) {
+                calculatorElement.innerHTML = '<div class="error-message">Failed to load calculator. Please refresh the page or check your internet connection.</div>';
+            } else {
+                console.error('Calculator element not found in DOM');
+                document.body.innerHTML += '<div class="error-message">Calculator failed to initialize correctly.</div>';
             }
-        }, 2000);
+        } else {
+            console.log('Alpine.js loaded successfully');
+        }
+    }, 2000);
     </script>
 </body>
 </html>error('Alpine.js failed to load. Check your network connection.');
