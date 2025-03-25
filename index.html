@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSCR Calculator</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div id="dscr-calculator" x-data="dscrCalculator" x-init="initialize()">
+        <div class="calculator-container">
+            <h1>DSCR Loan Calculator</h1>
+            
+            <!-- Section 1: Loan Type -->
+            <div class="calculator-section">
+                <h2>Loan Information</h2>
+                
+                <div class="form-group">
+                    <label>Is this a Refi?</label>
+                    <div class="button-group">
+                        <button :class="{ 'active': !isRefi }" @click="isRefi = false; updatePropertyValueLabel()">No</button>
+                        <button :class="{ 'active': isRefi }" @click="isRefi = true; updatePropertyValueLabel()">Yes</button>
+                    </div>
+                </div>
+                
+                <div class="form-group checkboxes">
+                    <label>
+                        <input type="checkbox" x-model="existing1st">
+                        Existing 1st?
+                    </label>
+                    <label>
+                        <input type="checkbox" x-model="loanFunded">
+                        Loan funded
+                    </label>
+                    <label>
+                        <input type="checkbox" x-model="tempBuydown">
+                        Temp buydown?
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Section 2: Property Value -->
+            <div class="calculator-section">
+                <h2>Property Value</h2>
+                
+                <div class="form-group">
+                    <label x-text="propertyValueLabel + '*'"></label>
+                    <input type="text" x-model="propertyValue" @input="formatCurrency($event, 'propertyValue'); calculateLoanAmount()">
+                </div>
+                
+                <div class="form-group" x-show="showDownPaymentPercent">
+                    <label x-text="isRefi ? 'Equity %*' : 'Down Payment %*'"></label>
+                    <div class="input-with-toggle">
+                        <input type="text" x-model="downPaymentPercent" @input="formatPercent($event, 'downPaymentPercent'); calculateLoanAmountFromPercent()">
+                        <span class="unit">%</span>
+                        <button @click="toggleDownPaymentType('amount')" class="toggle-btn">$</button>
+                    </div>
+                </div>
+                
+                <div class="form-group" x-show="!showDownPaymentPercent">
+                    <label x-text="isRefi ? 'Equity $*' : 'Down Payment $*'"></label>
+                    <div class="input-with-toggle">
+                        <input type="text" x-model="downPaymentAmount" @input="formatCurrency($event, 'downPaymentAmount'); calculateDownPaymentPercent()">
+                        <button @click="toggleDownPaymentType('percent')" class="toggle-btn">%</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Base loan amount*</label>
+                    <input type="text" x-model="loanAmount" @input="formatCurrency($event, 'loanAmount'); calculateDownPaymentFromLoan()">
+                </div>
+            </div>
+            
+            <!-- Section 3: Rental Income (moved up as requested) -->
+            <div class="calculator-section">
+                <h2>Rental Income</h2>
+                
+                <div class="form-group">
+                    <label>Number of Units*</label>
+                    <input type="number" x-model.number="numberOfUnits" min="1" max="10" @change="updateRentalIncomeInputs()">
+                </div>
+                
+                <div class="form-group" x-show="numberOfUnits > 1">
+                    <label>Income Entry Method</label>
+                    <div class="button-group">
+                        <button :class="{ 'active': rentalIncomeMethod === 'total' }" @click="rentalIncomeMethod = 'total'; updateRentalIncomeInputs()">Total</button>
+                        <button :class="{ 'active': rentalIncomeMethod === 'perUnit' }" @click="rentalIncomeMethod = 'perUnit'; updateRentalIncomeInputs()">Per Unit</button>
+                    </div>
+                </div>
+                
+                <div class="form-group" x-show="rentalIncomeMethod === 'total'">
+                    <label>Total Monthly Rental Income*</label>
+                    <input type="text" x-model="totalRentalIncome" @input="formatCurrency($event, 'totalRentalIncome')">
+                </div>
+                
+                <template x-for="(unit, index) in rentalUnits" :key="index">
+                    <div class="form-group" x-show="rentalIncomeMethod === 'perUnit'">
+                        <label x-text="`Unit ${index + 1} Monthly Rent*`"></label>
+                        <input type="text" x-model="unit.income" @input="formatCurrency($event, null, index); calculateTotalRentalIncome()">
+                    </div>
+                </template>
+            </div>
+            
+            <!-- Section 4: Loan Terms -->
+            <div class="calculator-section">
+                <h2>Loan Terms</h2>
+                
+                <div class="form-group">
+                    <label>Interest rate*</label>
+                    <div class="input-with-unit">
+                        <input type="text" x-model="interestRate" @input="formatPercent($event, 'interestRate')">
+                        <span class="unit">%</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Term (years)*</label>
+                    <input type="number" x-model.number="termYears" min="1" max="40">
+                </div>
+                
+                <div class="form-group checkboxes">
+                    <label>
+                        <input type="checkbox" x-model="isInterestOnly">
+                        Interest Only Payment
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Section 5: Property Expenses -->
+            <div class="calculator-section">
+                <h2>Property Expenses</h2>
+                
+                <div class="form-group" x-show="showTaxesInPercent">
+                    <label>Annual Property Taxes*</label>
+                    <div class="input-with-toggle">
+                        <input type="text" x-model="taxesPercent" @input="formatPercent($event, 'taxesPercent'); calculateTaxesAmount()">
+                        <span class="unit">%</span>
+                        <button @click="toggleTaxesType('amount')" class="toggle-btn">$</button>
+                    </div>
+                </div>
+                
+                <div class="form-group" x-show="!showTaxesInPercent">
+                    <label>Annual Property Taxes*</label>
+                    <div class="input-with-toggle">
+                        <input type="text" x-model="taxesAmount" @input="formatCurrency($event, 'taxesAmount'); calculateTaxesPercent()">
+                        <button @click="toggleTaxesType('percent')" class="toggle-btn">%</button>
+                    </div>
+                </div>
+                
+                <div class="form-group" x-show="showInsuranceInPercent">
+                    <label>Annual Insurance*</label>
+                    <div class="input-with-toggle">
+                        <input type="text" x-model="insurancePercent" @input="formatPercent($event, 'insurancePercent'); calculateInsuranceAmount()">
+                        <span class="unit">%</span>
+                        <button @click="toggleInsuranceType('amount')" class="toggle-btn">$</button>
+                    </div>
+                </div>
+                
+                <div class="form-group" x-show="!showInsuranceInPercent">
+                    <label>Annual Insurance*</label>
+                    <div class="input-with-toggle">
+                        <input type="text" x-model="insuranceAmount" @input="formatCurrency($event, 'insuranceAmount'); calculateInsurancePercent()">
+                        <button @click="toggleInsuranceType('percent')" class="toggle-btn">%</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Monthly HOA Fees</label>
+                    <input type="text" x-model="hoaFees" @input="formatCurrency($event, 'hoaFees')">
+                </div>
+            </div>
+            
+            <!-- Calculate Button -->
+            <div class="calculator-section">
+                <button @click="calculateDSCR()" class="calculate-btn">Calculate DSCR</button>
+                <button x-show="showResults" @click="generateShareableLink()" class="share-btn">Generate Shareable Link</button>
+                <div x-show="shareableLink" class="shareable-link">
+                    <input type="text" x-model="shareableLink" readonly>
+                    <button @click="copyToClipboard()">Copy</button>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="calculator-section results-section" x-show="showResults">
+                <h2>Results</h2>
+                
+                <div class="dscr-message" :class="dscrMessageClass">
+                    <p x-text="dscrMessage"></p>
+                </div>
+                
+                <div class="results-grid">
+                    <div class="result-item">
+                        <div class="result-label">Monthly Mortgage Payment:</div>
+                        <div class="result-value" x-text="formatCurrencyOutput(monthlyMortgagePayment)"></div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Monthly Property Taxes:</div>
+                        <div class="result-value" x-text="formatCurrencyOutput(monthlyTaxes)"></div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Monthly Insurance:</div>
+                        <div class="result-value" x-text="formatCurrencyOutput(monthlyInsurance)"></div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Monthly HOA:</div>
+                        <div class="result-value" x-text="formatCurrencyOutput(parseFloat(hoaFees) || 0)"></div>
+                    </div>
+                    <div class="result-item total">
+                        <div class="result-label">Total Monthly Expenses:</div>
+                        <div class="result-value" x-text="formatCurrencyOutput(totalMonthlyExpenses)"></div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Gross Rental Income:</div>
+                        <div class="result-value" x-text="formatCurrencyOutput(parseFloat(totalRentalIncome))"></div>
+                    </div>
+                    <div class="result-item dscr-result">
+                        <div class="result-label">DSCR Value:</div>
+                        <div class="result-value" x-text="dscrValue.toFixed(2)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="js/url-params.js?v=1.0.0"></script>
+    <script src="js/ui-controls.js?v=1.0.0"></script>
+    <script src="js/calculator.js?v=1.0.0"></script>
+</body>
+</html>
